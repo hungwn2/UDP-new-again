@@ -66,14 +66,23 @@ void* Client::receiverWrapper(void* param) {
     return nullptr;
 }
 
-void Client::sendMessage(const std::string& message) {
-    sendto(m_socket, message.c_str(), message.length(), 0,
-           (struct sockaddr*)&m_serverAddr, sizeof(m_serverAddr));
+void Client::sendMessage(int sockfd, const std::string& message) {
+    socklen_t serverlen=sizeof(server);
+
+    if(sendto(m_socket, message.c_str(), message.length(), 0,
+           (struct sockaddr*)&m_serverAddr, sizeof(m_serverAddr))==-1){
+            std::cout<<"Failed to send message \n";
+            return 1;
+           }
+    return 0;
+
 }
 
 void Client::stop() {
     m_running = false;
+    if (socket_fd!=-1){
     close(m_socket);
+    }
 }
 
 bool Client::isRunning() const {

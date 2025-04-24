@@ -11,10 +11,11 @@ public:
     
     Client(const std::string& host, int port, messageCallback callback);
     ~Client();
-    
+    void clean_up_socket(int sockfd);
     void start();
     void stop();
-    void sendMessage(const std::string& message);
+    bool sendMessage(int sockfd, const std::string& message);
+    int receiveMsg(intsockfd, const std::string* message);
     bool isRunning() const;
 
 private:

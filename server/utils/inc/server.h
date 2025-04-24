@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <pthread.h>
 
+
 class Server {
 public:
     using messageCallback = void (*)(Server*, const std::string&, struct sockaddr_in&);
@@ -20,12 +21,19 @@ public:
 private:
     void receiverProcedure();
     static void* receiverWrapper(void* param);
-
+    using messageCallback = std::function<void(const char* data, int len, Server *srv, std::string &ip, uint16_t port)>;
+    using connectCallback = std::function<void(Server *srv, char* buffer, std::string& ip, uint16_t port)>;
+    void error (const std::string&msg){
+        perror(msg);
+        exit(1);
+    }
     int m_socket;
-    bool m_running;
+    char buffer[1024];
+    int m_port;
+    bool m_isListening;
     struct sockaddr_in m_serverAddr;
     messageCallback m_messageCallback;
-    pthread_t m_receiverThread;
+    connectCallback m_connectCallback;
     std::unordered_map<std::string, struct sockaddr_in> m_knownClients;
-    pthread_mutex_t m_mutex;
+    std::mutex m_mutex;
 };
