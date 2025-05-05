@@ -1,43 +1,28 @@
-# Compiler and flags
+# Makefile
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2
+CXXFLAGS = -Wall -Wextra -pthread -std=c++17
 
-# Directories
-SERVER_DIR = server
-CLIENT_DIR = client
-BUILD_DIR = build
+# Source files
+SERVER_SRC = server/server.cpp
+CLIENT_SRC = client/client.cc
+UDPHANDLE_SRC = udphandle/udphandle.cpp
 
-# Sources
-SERVER_SOURCES = $(wildcard $(SERVER_DIR)/src/*.cc) $(SERVER_DIR)/main.cc
-CLIENT_SOURCES = $(wildcard $(CLIENT_DIR)/src/*.cc) $(CLIENT_DIR)/main.cc
+# Object files
+SERVER_OBJ = $(SERVER_SRC:.cpp=.o)
+CLIENT_OBJ = $(CLIENT_SRC:.cc=.o)
+UDPHANDLE_OBJ = $(UDPHANDLE_SRC:.cpp=.o)
 
-# Includes
-INCLUDES = -I$(SERVER_DIR)/include -I$(CLIENT_DIR)/include
+# Executables
+SERVER_BIN = server/server
+CLIENT_BIN = client/client
 
-# Output binaries
-SERVER_BIN = $(BUILD_DIR)/server/main
-CLIENT_BIN = $(BUILD_DIR)/client/main
-
-# Default target
 all: $(SERVER_BIN) $(CLIENT_BIN)
 
-# Create build directory
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)/server
-	mkdir -p $(BUILD_DIR)/client
+$(SERVER_BIN): $(SERVER_SRC) $(UDPHANDLE_SRC)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# Build server
-$(SERVER_BIN): $(SERVER_SOURCES) | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) $(SERVER_SOURCES) $(INCLUDES) -o $(SERVER_BIN)
+$(CLIENT_BIN): client/main.cpp $(CLIENT_SRC) $(UDPHANDLE_SRC)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# Build client
-$(CLIENT_BIN): $(CLIENT_SOURCES) | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) $(CLIENT_SOURCES) $(INCLUDES) -o $(CLIENT_BIN)
-
-# Clean build artifacts
 clean:
-	rm -rf $(BUILD_DIR)
-
-# Run both
-test: all
-	./test/test.sh
+	rm -f server/server client/client *.o

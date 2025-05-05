@@ -3,10 +3,12 @@
 
 class Client {
 public:
-    Client(const std::string& serverIP, int port);
-    void send(const std::string& message);
+    Client(const std::string& serverIP, uint16_t port);
+    ~Client();
 
+    bool sendMessage(const std::string& message);
+    bool receiveMessage(std::string& message);
 private:
-    std::string m_serverIP;
-    int m_port;
+    int m_socket;
+    struct sockaddr_in m_serverAddr;
 };

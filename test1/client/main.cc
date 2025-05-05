@@ -1,7 +1,7 @@
-#include "client.h"
+#include "server.h"
 
 int main() {
-    Client client("127.0.0.1", 8080);
-    client.send("Hello from client");
+    Server server(8080);
+    server.run();
     return 0;
 }
