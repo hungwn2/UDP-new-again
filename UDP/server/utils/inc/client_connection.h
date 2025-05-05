@@ -10,12 +10,19 @@ class Server;
 class clientConnection{
     private:
         sockaddr_in clientAddr;
-        socklen_t addressLen;
-        int socketFd;
+        std::string m_clientName;
+        int m_clientSocket;
+        bool m_isConnected;
+        mutable std::mutex m_mutex;
+
 
     public:
         ClientConnection(int sockfd, const sockaddr_in cliaddr, socklen_t addrLen);
         ~ClientConnection();
-        bool sendMessage(const std::string&message);
-        std::string getClientAdress() const;
-}
+        std::string getClientAddress() const;
+        void sendMessaeg(const std::string& message);
+        void setClientName(const std::string& name);
+        bool isConnected() const;
+        int getSocketFd() const;
+        sockaddr_in getClientAddr() const;
+};

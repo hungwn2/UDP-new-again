@@ -4,76 +4,114 @@
 #include <string>
 #include <unordered_map>
 #include <pthread.h>
+#include <mutex>
+#include <cstring>
+#include <unistd.h>
+#include <iostream>
+#include <thread>
+#include "server.h"
 
 
 struct clientId{
     std::string ip;
     uint16_t port;
 
-    booloperator<(const ClientID& other) const{
+    booloperator==(const ClientID& other) const{
         return std::tie(ip, port)<std::tie(other.ip, other.port);
     }
+};
+
+
+
+//hash function for client ids
+namespace std{
+    template<>
+    struct hash<ClientId>{
+        std::size_t operator()(const ClientId& id) const{
+            return hash<string>()(id.ip)^hash<uint16_t>()(id.port);        
+        }
+    }
 }
-class Server {
-public:
+
+
     using messageCallback = void (*)(Server*, const std::string&, struct sockaddr_in&);
     
-    Server(int port):m_port=port{
-        m_isListenign=true;
+    Server(int port) : m_port(port), m_running(true){
         m_socket=socket(AF_INET, SOCK_DGRAM, 0);
         if(m_socket<0) error("Opening socket");
-        struct sockaddr_in server;
-        m_serverAddr=server;
+        
+        struct sockaddr_in serverAddr{};
         serverAddr.sin_family=AF_INET;
         serverAddr.sin_addr.s_addr=INADDR_ANY:
         serverAddr.sin_port=htons(m_port);
+        
         if (bind(m_socketm (struct sockaddr*)&serverAddr, sizeof(serverAddr))<0){
             error("failed to bind");
         }
 
         std::cout << "[UDP] Server started on port " << m_port << std::endl;
     }
-    ~Server(){
-        stop();
+    Server::~Server(){
+        m_running=false;
         close(m_socket);
     }
 
     
-    void start(int port, messageCallback callback){
+    void Server::start(MessageCallback callback){
         m_messageCallback=callback;
         std::thread receiverThread(&Server:receiverProcedure, this);
         receiverThread.detach();
     }
-    void stop(){
-        m_islistening=false;
+
+    void Server::stop(){
+        m_running=false;
     }
-    void broadcastMessage(const std::string& message);
-    void sendMessage(const std::string& message, struct sockaddr_in& clientAddr){
+    void Server::sendMessage(const std::string& message, struct sockaddr_in& clientAddr){
         std:lock_guard <std::mutex> lock(m_mutex);
-        if (m_knownClients.find(id.p+":"+std::to_string(id.port)));
+        auto it=m_knownClinet.find(id);
+        if (it!=m_kknownClients.end()){
+            sendto(m_socket, message.c_str(), message.length(), 0, (struct sockaddr*)&it->second, sizeof(it->second));
+        }else{
+            std::cerr<"Client not found"<<id.ip<<",  "<<id.port<<std::endl;
+        }
+    }
+
+    void Server::broadcastMessage(const std::string& message){
+        std::lock_guard<std::mutex> lock(m_mutex);
+        for(const auto& pair: m_knownClients){
+            sendto(m_socket, message.c_str(), message.length(), 0, (struct sockaddr*)&pair.second, sizeof(pair.second));
+        }
+    
     }
 
 private:
+    int m_socket;
+    int m_port;
+    bool m_running;
+    std::mutex m_mutex;
+    std::unordered_map<ClientId, struct sockaddr_in>m_knownClients;
+    MessageCallback m_messageCallback=nullptr;
     void receiverProcedure(){
-        struct sockaddr_in clientAddr;
-        socklen_t clientlen=sizeof(clientAddr);
-        while(m_islitening){
+        char buffer[1024];
+        struct sockaddr_in clientAddr{};
+        socklen_t clientLen=sizeof(clientAddr);
+        while(m_running){
             int n=recvfrom(m_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientAddr, &clientLen);
-            if(n<0) std::cerr<<"error receiving message"<<std::endl;
+            if(n<0){
+                std::cerr<<"error receiving message"<<std::endl;
+                continue;
+            }
+            buffer[n]='\0';
             char ip[INET_ADDDRSTLEN];
             inet_ntop(AF_INET< &clientAdrr.sin_addr, ip, INET_ADDRSTRLEN);
-            std::string clientIP(ip);
-            
-            ClientID newCLient={clientIP, port};
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if (m_knownClients.find(ClientID)==m_knownCLients.end()){
-                m_knownClients[clientId]=clientAddr;
-                if (m_connectCallback){
-                    m_connectCallback(this, newClient, port);
-                }
+            uint16_t port=ntohs(clientAddr.sin_port);
+            ClientId id{ip, port};
+
+            {
+                std:lock_guard<std::mutex>lock(m_mutex);
+                m_knownClients.emplace(id, clientAddr);
             }
-        }
+           
        
             if(messageCallback){
                 m_messageCallback(this, buffer, n , clientId, port);
@@ -121,4 +159,3 @@ private:
     }
 
    
-};
