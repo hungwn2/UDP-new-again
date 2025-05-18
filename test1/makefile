@@ -1,24 +1,19 @@
-cmake_minimum_required(VERSION 3.10)
-project(test1)
+CXX = g++
+CXXFLAGS = -Wall -std=c++17 -pthread -Iclient/include -Iserver/include
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "-Wall -pthread")
+CLIENT_SRCS = client/src/client.cc client/client_main.cc
+SERVER_SRCS = server/src/server.cc server/src/threadpool.cc server/src/udpClientConnection.cc server/server_main.cc
 
-include_directories(
-    client/include
-    server/include
-)
+CLIENT_BIN = client_app
+SERVER_BIN = server_app
 
-# === Client Build ===
-add_executable(client_app
-    client/client_main.cc
-    client/src/client.cc
-)
+all: $(CLIENT_BIN) $(SERVER_BIN)
 
-# === Server Build ===
-add_executable(server_app
-    server/server_main.cc
-    server/src/server.cc
-    server/src/threadpool.cc
-    server/src/udpClientConnection.cc
-)
+$(CLIENT_BIN): $(CLIENT_SRCS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+$(SERVER_BIN): $(SERVER_SRCS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+clean:
+	rm -f $(CLIENT_BIN) $(SERVER_BIN)

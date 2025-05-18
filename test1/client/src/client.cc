@@ -43,3 +43,41 @@ bool Client::sendMessage(const std::string& message){
     ssize_t sent=sendto(m_socket, message.c_str(), message.length(), 0, (sockaddr*)&m_serverAddr, sizeof(m_serverAddr));
     return sent>=0;
 }
+
+
+void* Client::receiverThreadWrapper(void* arg){
+    Client* client=static_cast<Client*>(arg);
+    char buffer[MAX_BUFFER];
+    while(client->m_isConnected){
+        sockaddr_in fromAddr{};
+        socklen_t addrLen=sizeof(fromAddr);
+        ssize_t len=recvfrom(client->m_socket, buffer, MAX_BUFFER, 0, (sockaddr*)&fromAddr, &addrLen);
+        if (len>0){
+            std::string msg(buffer, len);
+            pthread_mutex_lock(&client->m_mutex);
+            client->m_messageQueue.push(msg);
+            pthread_mutex_unlock(&client->m_mutex);
+            sem_post(&client->m_messageSemaphore);
+        }
+    }
+    return nullptr;
+}
+
+void* Client::processMessageThreadWrapper(void* arg){
+    Client* client=static_cast<Client*>(arg);
+    while (client->m_isConnected){
+        sem_wait(&client->m_messageSemaphore);
+        std::string msg;
+        pthread_mutex_lock(&client->m_mutex);
+        //check if message queue empty
+        if(!client->m_messageQueue.empty()){
+            msg=client->m_messageQueue.front();
+            client->m_messageQueue.pop();
+        }
+        pthread_mutex_unlock(&client->m_mutex);
+        if (!msg.empty() && client->m_callback){
+            client->m_callback(client, msg);
+        }
+    }
+    return nullptr;
+}
