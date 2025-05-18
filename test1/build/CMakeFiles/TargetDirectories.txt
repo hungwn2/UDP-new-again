@@ -1,0 +1,4 @@
+C:/Users/User/kdachjc/test1/build/CMakeFiles/client_app.dir
+C:/Users/User/kdachjc/test1/build/CMakeFiles/server_app.dir
+C:/Users/User/kdachjc/test1/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/User/kdachjc/test1/build/CMakeFiles/ZERO_CHECK.dir

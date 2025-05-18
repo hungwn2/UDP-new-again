@@ -14,27 +14,32 @@ Client::Client(const std::string& serverIP, uint16_t port){
     memset(&m_serverAddr, 0, sizeof(m_serverAddr));
     m_serverAddr.sin_family=AF_INET;
     inet_pton(AF_INET, serverIP.c_str(), &m_serverAddr.sin_addr);
+    pthread_mutex_init(&m_mutex, nullptr);
+    sem_init(&m_messageSemaphore, 0, 0);
+    m_isConnected=true;
+    pthread_create(&m_receiverThreadId, nullptr, receiverThreadWrapper, this);
+    pthread_create(&m_processMessageThreadId, nullptr, processMessageThreadWrapper, this);
 }
 
+
 Client::~Client(){
+    m_isConnected=false;
     close(m_socket);
+    pthread_cancel(m_receiverThreadId);
+    pthread_cancel(m_processMessageThreadId);
+    pthread_join(m_receiverThreadId, nullptr);
+    pthread_join(m_processMessageThreadId, nullptr);
+    pthread_mutex_destroy(&m_mutex);
+    sem_destroy(&m_messageSemaphore);
 }
+
+void Client::setMessageCallback(messageCallback cb){
+    m_callback=cb;
+}
+
+
 
 bool Client::sendMessage(const std::string& message){
     ssize_t sent=sendto(m_socket, message.c_str(), message.length(), 0, (sockaddr*)&m_serverAddr, sizeof(m_serverAddr));
     return sent>=0;
-}
-
-bool Client::receiveMessage(std::string& message) {
-    char buffer[1024] = {0};
-    socklen_t addrLen = sizeof(m_serverAddr);
-    ssize_t len=recvfrom(sock, buffer, sizeof(buffer), 0,
-             (sockaddr*)&serverAddr, &len);
-    if (len>0){
-        buffer[len]-'\0';
-        message=buffer;
-        return true;
-    }
-    return false;
-
 }
