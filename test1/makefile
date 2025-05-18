@@ -1,28 +1,30 @@
-# Makefile
+# Compiler and flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -pthread -std=c++17
+CXXFLAGS = -std=c++17 -Wall -Wextra -Iserver/include -Iclient/include -Iutils/inc
 
 # Source files
-SERVER_SRC = server/server.cpp
-CLIENT_SRC = client/client.cc
-UDPHANDLE_SRC = udphandle/udphandle.cpp
+SRCS = \
+    main.cc \
+    server/src/server.cc \
+    client/src/client.cc \
+    utils/src/ntp_server.cc \
+    utils/src/udpClientConnection.cc
 
 # Object files
-SERVER_OBJ = $(SERVER_SRC:.cpp=.o)
-CLIENT_OBJ = $(CLIENT_SRC:.cc=.o)
-UDPHANDLE_OBJ = $(UDPHANDLE_SRC:.cpp=.o)
+OBJS = $(SRCS:.cc=.o)
 
-# Executables
-SERVER_BIN = server/server
-CLIENT_BIN = client/client
+# Output binary name
+TARGET = main
 
-all: $(SERVER_BIN) $(CLIENT_BIN)
+# Build target
+all: $(TARGET)
 
-$(SERVER_BIN): $(SERVER_SRC) $(UDPHANDLE_SRC)
+$(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-$(CLIENT_BIN): client/main.cpp $(CLIENT_SRC) $(UDPHANDLE_SRC)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+%.o: %.cc
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Clean up
 clean:
-	rm -f server/server client/client *.o
+	rm -f $(OBJS) $(TARGET)

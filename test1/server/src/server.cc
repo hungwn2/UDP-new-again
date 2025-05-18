@@ -31,9 +31,24 @@ void Server::run() {
 void Server::listenLoop() {
     while (m_running) {
         ClientConnection client;
-        if (client.receiveMessage(m_socketFd)) {
-            std::string reply = "ACK from server";
-            client.sendMessage(m_socketFd, reply);
+        char buffer[1024];
+        sockaddr_in clientAddr{};
+        socklen_t addrLen=sizeof(clientAddr);
+        ssize_t bytesReceived=recvfrom(
+            m_socketFd,
+            buffer,
+            sizeof(buffer),
+            0
+            (struct sockaddr*)&clientAddr,
+            &addrLen
+        );
+        if (bytesReceived>0){
+            client.setClientAddrress(clientAddr);
+            std::string message(buffer, bytesReceived);
+            std::cout<<"received: "<<message<<" from "<<client.getClientAddress()<<std::endl;
+            std::string reply="ACK from server";
+            client.sendMessage(m_socketFd, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientAddr, &addrLen);
+            i
         }
     }
 }
